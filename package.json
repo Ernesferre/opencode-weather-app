@@ -3,6 +3,13 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "start": "bun run index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "build": "bun build ./index.ts --compile --outfile dist/weather",
+    "dev": "bun run index.ts --watch"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },

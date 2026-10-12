@@ -29,6 +29,39 @@ https://api.open-meteo.com/v1/forecast?latitude=45.41117&longitude=-75.69812&cur
 bun init
 ```
 
+Este paso es solo para crear un proyecto nuevo. Para ejecutar este repositorio:
+
+```bash
+bun install --frozen-lockfile
+bun run start
+```
+
+### Uso y datos guardados
+
+- La opción 3 busca el primer resultado de Open-Meteo, muestra el país y las coordenadas y pide confirmación antes de agregarlo. Después muestra su temperatura actual.
+- La primera ciudad agregada se convierte en default. La opción 5 permite cambiarla.
+- Al eliminar la ciudad default, se selecciona la primera restante; si no quedan ciudades, no hay default.
+- La opción 8 permite elegir °C o °F. Se conservan ciudades, default y unidad entre ejecuciones.
+- Los datos se guardan en `~/.weather-cli/settings.json` (en Windows, dentro de tu carpeta de usuario). Puedes cambiar la ruta con la variable `WEATHER_CLI_CONFIG`.
+- Las consultas requieren conexión a internet. Si el archivo de configuración está corrupto, se muestra su ruta y la aplicación sale sin sobrescribirlo.
+
+### Verificar y generar el ejecutable
+
+```bash
+bun run typecheck
+bun test
+bun run build
+```
+
+Las pruebas usan respuestas simuladas y archivos temporales; no requieren internet ni modifican tus ciudades guardadas.
+El ejecutable se genera en `dist/weather` (en Windows, `dist/weather.exe`) para el sistema y arquitectura actuales. No necesita Bun instalado para ejecutarse.
+
+En PowerShell:
+
+```powershell
+.\dist\weather.exe
+```
+
 ### Ejemplo del menú
 Esta es la apariencia que deseamos crear
 
