@@ -1,0 +1,123 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: weather-release
+  cancel-in-progress: false
+
+jobs:
+  version:
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      published: ${{ steps.version.outputs.published }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Comprobar versión y Release existente
+        id: version
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { readFileSync } = require('node:fs');
+            const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
+            const semver = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*)?$/;
+            if (typeof version !== 'string' || !semver.test(version)) {
+              throw new Error('package.json debe contener una version SemVer válida.');
+            }
+            const tag = `v${version}`;
+            core.setOutput('version', version);
+            core.setOutput('tag', tag);
+            try {
+              await github.rest.repos.getReleaseByTag({ ...context.repo, tag });
+              core.setOutput('published', 'true');
+              core.notice(`${tag} ya está publicado; no se modificará.`);
+              return;
+            } catch (error) {
+              if (error.status !== 404) throw error;
+            }
+            try {
+              await github.rest.git.getRef({ ...context.repo, ref: `tags/${tag}` });
+            } catch (error) {
+              if (error.status !== 404) throw error;
+              core.setOutput('published', 'false');
+              return;
+            }
+            throw new Error(`El tag ${tag} ya existe sin Release. Revisa ese tag antes de publicar.`);
+
+  build:
+    needs: version
+    if: needs.version.outputs.published == 'false'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            platform: linux-x64
+          - os: windows-2022
+            platform: windows-x64
+          - os: macos-14
+            platform: macos-arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.4.2'
+      - run: bun install --frozen-lockfile
+      - name: Validar y compilar
+        run: bun run build
+      - name: Empaquetar Linux y macOS
+        if: runner.os != 'Windows'
+        shell: bash
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          mkdir -p release
+          tar -czf "release/weather-${VERSION}-${PLATFORM}.tar.gz" -C dist weather
+      - name: Empaquetar Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          New-Item -ItemType Directory -Path release -Force
+          Compress-Archive -Path dist/weather.exe -DestinationPath "release/weather-$env:VERSION-$env:PLATFORM.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: weather-${{ matrix.platform }}
+          path: release/*
+          if-no-files-found: error
+
+  release:
+    needs: [version, build]
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: weather-*
+          path: release
+          merge-multiple: true
+      - name: Crear tag y Release con los binarios
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.version.outputs.tag }}
+          COMMIT: ${{ github.sha }}
+          VERSION: ${{ needs.version.outputs.version }}
+        shell: bash
+        run: |
+          options=()
+          if [[ "$VERSION" == *-* ]]; then options+=(--prerelease); fi
+          gh release create "$TAG" release/* --target "$COMMIT" --title "$TAG" --generate-notes "${options[@]}"

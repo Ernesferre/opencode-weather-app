@@ -77,6 +77,18 @@ En PowerShell:
 .\dist\weather.exe
 ```
 
+### Releases en GitHub
+
+El workflow `.github/workflows/release.yml` se ejecuta al hacer push a `main` o manualmente desde **Actions → Release → Run workflow**.
+Lee `version` de `package.json` y, si todavía no está publicada, ejecuta `bun install --frozen-lockfile` y `bun run build` en las tres plataformas. Solo después de que todas pasen crea el tag `v<version>` y el Release del commit compilado, con estos archivos:
+
+- `weather-<version>-windows-x64.zip`
+- `weather-<version>-linux-x64.tar.gz`
+- `weather-<version>-macos-arm64.tar.gz` (Apple Silicon)
+
+Los archivos contienen el ejecutable; no requieren instalar Bun. En Linux y macOS, extraer con `tar -xzf <archivo>` y ejecutar `./weather`.
+Para publicar otra versión, cambia `version` en `package.json` y sube el commit a `main`. Las versiones ya publicadas no se sobrescriben; las versiones con sufijo como `1.1.0-beta.1` se publican como prerelease. Si ya existe el tag pero no su Release, el workflow se detiene para evitar publicar un binario de un commit diferente.
+
 ### Ejemplo del menú
 Esta es la apariencia que deseamos crear
 
