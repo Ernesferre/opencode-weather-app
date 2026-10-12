@@ -42,6 +42,7 @@ bun run start
 - La primera ciudad agregada se convierte en default. La opción 5 permite cambiarla.
 - Al eliminar la ciudad default, se selecciona la primera restante; si no quedan ciudades, no hay default.
 - La opción 8 permite elegir °C o °F. Se conservan ciudades, default y unidad entre ejecuciones.
+- La opción 6 permite seleccionar una ciudad guardada y ver el pronóstico de 7 días, incluyendo hoy en la zona horaria de la ciudad: estado del cielo, temperaturas mínima y máxima y probabilidad máxima diaria de precipitación. Usa la unidad configurada y no modifica los datos guardados. Puedes cancelar con 0.
 - Los datos se guardan en `~/.weather-cli/settings.json` (en Windows, dentro de tu carpeta de usuario). Puedes cambiar la ruta con la variable `WEATHER_CLI_CONFIG`.
 - Las consultas requieren conexión a internet. Si el archivo de configuración está corrupto, se muestra su ruta y la aplicación sale sin sobrescribirlo.
 
@@ -74,6 +75,7 @@ Esta es la apariencia que deseamos crear
   3. Buscar y agregar ciudad
   4. Eliminar ciudad
   5. Establecer ciudad default
+  6. Pronóstico de 7 días
   8. Ajustes (°C)
   9. Salir
 ════════════════════════════════════════

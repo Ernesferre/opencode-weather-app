@@ -1,7 +1,7 @@
 import { createInterface } from "node:readline";
 import { colors } from "./colors.ts";
 import { loadSettings, saveSettings, type Settings } from "./storage.ts";
-import { cityLabel, getTemperature, searchCity, type City } from "./weather.ts";
+import { cityLabel, getForecast, getTemperature, searchCity, weatherDescription, type City, type ForecastDay, type TemperatureUnit } from "./weather.ts";
 
 const separator = "════════════════════════════════════════";
 
@@ -11,8 +11,25 @@ export function renderMenu(settings: Settings, palette = colors): string {
     "  1. Clima de ciudad default",
     `  2. Clima de todas las ciudades (${settings.cities.length})`,
     "  3. Buscar y agregar ciudad", "  4. Eliminar ciudad",
-    "  5. Establecer ciudad default", `  8. Ajustes (${symbol})`,
+    "  5. Establecer ciudad default", "  6. Pronóstico de 7 días", `  8. Ajustes (${symbol})`,
     "  9. Salir", separator].join("\n"));
+}
+
+export function renderForecast(city: City, days: ForecastDay[], unit: TemperatureUnit, palette = colors): string {
+  const symbol = unit === "celsius" ? "°C" : "°F";
+  const dateFormat = new Intl.DateTimeFormat("es", { weekday: "short", day: "2-digit", month: "2-digit", timeZone: "UTC" });
+  const rows = days.map(day => {
+    // Las fechas diarias ya pertenecen a la zona de la ciudad; UTC evita desplazarlas al formatear.
+    const date = dateFormat.format(new Date(`${day.date}T00:00:00Z`)).padEnd(14);
+    const minimum = palette.yellow(`${day.minimum.toFixed(1)} ${symbol}`.padStart(10));
+    const maximum = palette.yellow(`${day.maximum.toFixed(1)} ${symbol}`.padStart(10));
+    return `  ${date} ${minimum} ${maximum} ${`${day.precipitationProbability}%`.padStart(8)}  ${weatherDescription(day.weatherCode)}`;
+  });
+  return [
+    palette.cyan(`Pronóstico de 7 días: ${cityLabel(city)} (incluye hoy)`),
+    "  Fecha                Mín.       Máx.   Precip.  Estado",
+    ...rows,
+  ].join("\n");
 }
 
 export async function runCli(): Promise<void> {
@@ -110,6 +127,14 @@ export async function runCli(): Promise<void> {
             console.log(colors.green(`Ciudad default: ${cityLabel(city)}.`));
             break;
           }
+          case "6": {
+            const city = await chooseCity();
+            if (!city) break;
+            console.log("Consultando pronóstico…");
+            const forecast = await getForecast(city, settings.unit);
+            console.log(renderForecast(city, forecast, settings.unit));
+            break;
+          }
           case "8": {
             console.log(colors.cyan("  1. Celsius (°C)\n  2. Fahrenheit (°F)\n  0. Cancelar"));
             const unit = await ask("Selecciona la unidad: ");
@@ -120,7 +145,7 @@ export async function runCli(): Promise<void> {
             break;
           }
           default:
-            console.log(colors.red("Opción inválida. Elige 1, 2, 3, 4, 5, 8 o 9."));
+            console.log(colors.red("Opción inválida. Elige 1, 2, 3, 4, 5, 6, 8 o 9."));
         }
       } catch (error) {
         console.log(colors.red(`Error: ${error instanceof Error ? error.message : "No se pudo completar la operación."}`));
