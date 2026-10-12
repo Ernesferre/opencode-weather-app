@@ -53,6 +53,11 @@ describe("pronóstico de 7 días", () => {
       { daily: { ...valid.daily, precipitation_probability_max: Array(7).fill(101) } },
       { daily: { ...valid.daily, time: Array(7).fill("2026-02-30") } },
       { daily: { ...valid.daily, time: Array(7).fill("2026-10-12") } },
+      { daily: { ...valid.daily, temperature_2m_max: Array(7).fill("12") } },
+      { daily: { ...valid.daily, weather_code: Array(7).fill(-1) } },
+      { daily: { ...valid.daily, precipitation_probability_max: Array(7).fill(-1) } },
+      { daily: { ...valid.daily, time: ["2026-10-12", "2026-10-14", ...valid.daily.time.slice(2)] } },
+      { daily: { ...valid.daily, time: Array(7).fill("no-date") } },
     ];
     for (const body of invalidBodies) {
       respond(body);
@@ -113,5 +118,41 @@ describe("Open-Meteo", () => {
   test("reporta errores de conexión", async () => {
     globalThis.fetch = mock(async () => { throw new Error("offline"); }) as unknown as typeof fetch;
     await expect(searchCity("Ottawa")).rejects.toThrow("conexión");
+  });
+
+  test("rechaza búsquedas vacías antes de consultar la red", async () => {
+    const fetchMock = respond({});
+    await expect(searchCity("   ")).rejects.toThrow("Ingresa el nombre");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test("admite resultados vacíos y usa solo el primer resultado", async () => {
+    respond({ results: [] });
+    expect(await searchCity("desconocida")).toBeNull();
+    respond({ results: [{ ...city, country: undefined }, { ...city, id: 2 }] });
+    expect(await searchCity("Ottawa")).toEqual({ ...city, country: "" });
+  });
+
+  test("rechaza formas inválidas de geocodificación", async () => {
+    for (const body of [null, false, "city", { results: {} }, { results: null }, { results: [null] }, { results: [1] }]) {
+      respond(body);
+      await expect(searchCity("Ottawa")).rejects.toThrow("geocodificación inválida");
+    }
+  });
+
+  test("rechaza temperaturas ausentes, no numéricas o no finitas", async () => {
+    for (const body of [null, {}, { current: null }, { current: {} },
+      ...[null, "20", NaN, Infinity].map(temperature => ({ current: { temperature_2m: temperature } }))]) {
+      respond(body);
+      await expect(getTemperature(city, "celsius")).rejects.toThrow("temperatura válida");
+    }
+  });
+
+  test("admite cero y temperaturas negativas en Celsius", async () => {
+    for (const temperature of [0, -20.5]) {
+      const fetchMock = respond({ current: { temperature_2m: temperature } });
+      expect(await getTemperature(city, "celsius")).toBe(temperature);
+      expect(new URL(String(fetchMock.mock.calls[0]?.[0])).searchParams.get("temperature_unit")).toBe("celsius");
+    }
   });
 });

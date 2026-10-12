@@ -6,8 +6,11 @@
   "scripts": {
     "start": "bun run src/index.ts",
     "typecheck": "tsc --noEmit",
-    "test": "bun test",
-    "build": "bun build ./src/index.ts --compile --outfile dist/weather",
+    "test": "bun test ./tests",
+    "test:watch": "bun test ./tests --watch",
+    "test:coverage": "bun test ./tests --coverage",
+    "check": "bun run typecheck && bun run test",
+    "build": "bun run check && bun build ./src/index.ts --compile --outfile dist/weather",
     "dev": "bun run --watch src/index.ts"
   },
   "devDependencies": {

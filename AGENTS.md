@@ -8,6 +8,7 @@
 
 - Instalar dependencias: `bun install --frozen-lockfile` (el lockfile es `bun.lock`). El `bun init` del README es para inicializar, no para preparar este repositorio existente.
 - Ejecutar: `bun run start`. Verificar: `bun run typecheck` y `bun test`; ejecutar con Bun no sustituye la comprobación de tipos.
+- `bun run check` ejecuta tipos y pruebas; `bun run test:coverage` muestra cobertura. `bun run build` debe pasar `check` antes de compilar: no usar `bun build` directamente para omitir las validaciones.
 - Prueba enfocada: `bun test tests/weather.test.ts`. Las pruebas viven en `tests/`, simulan la red y usan archivos temporales; no requieren servicios externos.
 - Compilar: `bun run build` genera `dist/weather` (`dist/weather.exe` en Windows) para la plataforma actual. No hay configuración de lint, formato ni CI.
 

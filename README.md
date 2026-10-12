@@ -65,7 +65,10 @@ bun test
 bun run build
 ```
 
-Las pruebas usan respuestas simuladas y archivos temporales; no requieren internet ni modifican tus ciudades guardadas.
+Las pruebas están en `tests/` y usan respuestas simuladas y archivos temporales; no requieren internet ni modifican tus ciudades guardadas.
+`bun run check` ejecuta la comprobación de tipos y toda la suite. `bun run test:coverage` muestra la cobertura.
+`bun run build` ejecuta primero `check`: si falla la comprobación de tipos o alguna prueba, termina con error sin compilar ni reemplazar el ejecutable anterior. Usa este comando para generar la aplicación, no `bun build` directamente.
+La suite también comprueba este bloqueo y el caso exitoso en un proyecto temporal aislado.
 El ejecutable se genera en `dist/weather` (en Windows, `dist/weather.exe`) para el sistema y arquitectura actuales. No necesita Bun instalado para ejecutarse.
 
 En PowerShell:
