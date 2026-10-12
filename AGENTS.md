@@ -1,6 +1,6 @@
 # Contexto del proyecto
 
-- `index.ts` inicia `src/cli.ts`; `src/weather.ts` encapsula las dos APIs de Open-Meteo y `src/storage.ts` guarda ciudades, default y unidad. El menú del README está en español y usa las opciones 1–5, 8 y 9.
+- `src/index.ts` inicia el CLI; `src/actions/` contiene las operaciones del usuario, `src/presentation/` la interacción de consola, `src/api/` las dos APIs de Open-Meteo y `src/storage/` gestiona ciudades, default y unidad. Los contratos viven en `src/types/` y los helpers en `src/utils/`. El menú del README está en español y usa las opciones 1–6, 8 y 9.
 - La búsqueda toma el primer resultado de Geocoding API y pide confirmación antes de guardarlo; Forecast API recibe sus coordenadas y la unidad seleccionada.
 - La primera ciudad se convierte en default; eliminar la default selecciona la primera restante o deja `null` si la lista queda vacía.
 
@@ -8,7 +8,7 @@
 
 - Instalar dependencias: `bun install --frozen-lockfile` (el lockfile es `bun.lock`). El `bun init` del README es para inicializar, no para preparar este repositorio existente.
 - Ejecutar: `bun run start`. Verificar: `bun run typecheck` y `bun test`; ejecutar con Bun no sustituye la comprobación de tipos.
-- Prueba enfocada: `bun test src/weather.test.ts`. Las pruebas simulan la red y usan archivos temporales; no requieren servicios externos.
+- Prueba enfocada: `bun test tests/weather.test.ts`. Las pruebas viven en `tests/`, simulan la red y usan archivos temporales; no requieren servicios externos.
 - Compilar: `bun run build` genera `dist/weather` (`dist/weather.exe` en Windows) para la plataforma actual. No hay configuración de lint, formato ni CI.
 
 ## Persistencia

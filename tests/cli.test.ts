@@ -1,10 +1,11 @@
 import { expect, test } from "bun:test";
-import { renderForecast, renderMenu } from "./cli.ts";
-import { createColors } from "./colors.ts";
+import { renderMenu } from "../src/presentation/menu.ts";
+import { renderForecast } from "../src/presentation/output.ts";
+import { createColors } from "../src/utils/colors.ts";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { loadSettings, saveSettings } from "./storage.ts";
+import { loadSettings, saveSettings } from "../src/storage/settingsStorage.ts";
 
 test("el menú conserva la numeración del README y muestra cantidad y unidad", () => {
   const menu = renderMenu({ cities: [], defaultCityId: null, unit: "fahrenheit" });
@@ -49,7 +50,7 @@ test("la opción 6 permite cancelar y avisa si no hay ciudades", async () => {
   try {
     for (const cities of [[], [{ id: 1, name: "Ottawa", country: "Canadá", latitude: 45.4, longitude: -75.7 }]]) {
       await saveSettings({ cities, defaultCityId: cities[0]?.id ?? null, unit: "celsius" }, path);
-      const child = Bun.spawn([process.execPath, "run", join(import.meta.dir, "..", "index.ts")], {
+      const child = Bun.spawn([process.execPath, "run", join(import.meta.dir, "..", "src", "index.ts")], {
         env: { ...process.env, WEATHER_CLI_CONFIG: path }, stdin: "pipe", stdout: "pipe", stderr: "pipe",
       });
       child.stdin.write(cities.length ? "6\n0\n6\n99\n9\n" : "6\n9\n");
@@ -94,7 +95,7 @@ test("la opción 6 consulta el pronóstico y vuelve al menú tras un error", asy
         } });
       };
     `);
-    const child = Bun.spawn([process.execPath, "run", "--preload", preload, join(import.meta.dir, "..", "index.ts")], {
+    const child = Bun.spawn([process.execPath, "run", "--preload", preload, join(import.meta.dir, "..", "src", "index.ts")], {
       env: { ...process.env, WEATHER_CLI_CONFIG: path }, stdin: "pipe", stdout: "pipe", stderr: "pipe",
     });
     child.stdin.write("6\n1\n6\n1\n6\n1\n9\n");
@@ -126,7 +127,7 @@ test("la consola cambia default, guarda unidades, elimina y sale", async () => {
         { id: 2, name: "Madrid", country: "España", latitude: 40.4, longitude: -3.7 },
       ], defaultCityId: 1, unit: "celsius",
     }, path);
-    const child = Bun.spawn([process.execPath, "run", join(import.meta.dir, "..", "index.ts")], {
+    const child = Bun.spawn([process.execPath, "run", join(import.meta.dir, "..", "src", "index.ts")], {
       env: { ...process.env, WEATHER_CLI_CONFIG: path },
       stdin: "pipe", stdout: "pipe", stderr: "pipe",
     });
@@ -148,6 +149,41 @@ test("la consola cambia default, guarda unidades, elimina y sale", async () => {
     expect(saved.cities.map(city => city.id)).toEqual([1]);
     expect(saved.defaultCityId).toBe(1);
     expect(saved.unit).toBe("fahrenheit");
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("agregar requiere confirmación, conserva default y evita duplicados", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "weather-cli-add-"));
+  const path = join(directory, "settings.json");
+  const preload = join(directory, "mock-fetch.ts");
+  try {
+    await writeFile(preload, `
+      globalThis.fetch = async (input) => {
+        const url = new URL(String(input));
+        if (url.hostname === "geocoding-api.open-meteo.com") {
+          return Response.json({ results: [{ id: 1, name: "Ottawa", country: "Canadá", latitude: 45.4, longitude: -75.7 }] });
+        }
+        return Response.json({ current: { temperature_2m: 12.5 } });
+      };
+    `);
+    const child = Bun.spawn([process.execPath, "run", "--preload", preload, join(import.meta.dir, "..", "src", "index.ts")], {
+      env: { ...process.env, WEATHER_CLI_CONFIG: path }, stdin: "pipe", stdout: "pipe", stderr: "pipe",
+    });
+    child.stdin.write("3\nOttawa\nn\n1\n3\nOttawa\ns\n3\nOttawa\n9\n");
+    child.stdin.end();
+    const [output, errors, code] = await Promise.all([
+      new Response(child.stdout).text(), new Response(child.stderr).text(), child.exited,
+    ]);
+    expect(code).toBe(0);
+    expect(errors).toBe("");
+    expect(output).toContain("No hay ciudad default.");
+    expect(output.match(/Ciudad guardada\./g)).toHaveLength(1);
+    expect(output).toContain("Ottawa, Canadá: 12.5 °C");
+    expect(output).toContain("Ottawa, Canadá ya está guardada.");
+    expect((await loadSettings(path)).defaultCityId).toBe(1);
+    expect((await loadSettings(path)).cities).toHaveLength(1);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

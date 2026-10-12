@@ -1,13 +1,8 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { isCity, type City, type TemperatureUnit } from "./weather.ts";
-
-export interface Settings {
-  cities: City[];
-  defaultCityId: number | null;
-  unit: TemperatureUnit;
-}
+import { isCity } from "../types/City.ts";
+import type { Settings } from "../types/Settings.ts";
 
 export function settingsPath(): string {
   return process.env.WEATHER_CLI_CONFIG || join(homedir(), ".weather-cli", "settings.json");

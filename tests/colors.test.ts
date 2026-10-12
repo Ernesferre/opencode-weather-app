@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { createColors } from "./colors.ts";
+import { createColors } from "../src/utils/colors.ts";
 
 test("aplica los colores ANSI en una terminal", () => {
   const colors = createColors(true, {});

@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, mock, test } from "bun:test";
-import { getForecast, getTemperature, searchCity, weatherDescription, type City } from "./weather.ts";
+import { getForecast, getTemperature } from "../src/api/weather.ts";
+import { searchCity } from "../src/api/geocoding.ts";
+import { weatherDescription } from "../src/utils/format.ts";
+import type { City } from "../src/types/City.ts";
 
 const originalFetch = globalThis.fetch;
 const city: City = { id: 1, name: "Ottawa", country: "Canadá", latitude: 45.41117, longitude: -75.69812 };

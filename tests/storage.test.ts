@@ -2,7 +2,8 @@ import { afterEach, expect, test } from "bun:test";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { loadSettings, saveSettings, type Settings } from "./storage.ts";
+import { loadSettings, saveSettings } from "../src/storage/settingsStorage.ts";
+import type { Settings } from "../src/types/Settings.ts";
 
 const directories: string[] = [];
 async function temporaryPath() {

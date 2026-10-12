@@ -13,6 +13,17 @@ El objetivo de esta aplicación es que creemos una aplicación de consola que pi
 - Bun.js
 - OpenMeteo
 
+## Estructura del proyecto
+
+- `src/index.ts`: punto de entrada y arranque del CLI.
+- `src/actions/`: acciones de ciudades, clima, pronóstico y ajustes.
+- `src/presentation/`: menú, entrada y salida de consola.
+- `src/storage/`: gestión de ciudades y persistencia de configuración en un único JSON.
+- `src/types/`: tipos y contratos compartidos.
+- `src/api/`: geocodificación y consultas meteorológicas de Open-Meteo.
+- `src/utils/`: formatos, constantes y colores.
+- `tests/`: pruebas unitarias y de integración.
+
 ## Ejemplo de petición http:
 
 1. Paso 1: Geocoding API.
